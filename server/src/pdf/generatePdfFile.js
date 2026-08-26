@@ -1,12 +1,10 @@
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import pdfMake from "pdfmake";
 import { fontDescriptors, isStandardFontName } from "./fonts.js";
+import { DATA_DIR } from "../config.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export const defaultPdfStorageDir = path.join(__dirname, "../../storage/pdfs");
+export const defaultPdfStorageDir = path.join(DATA_DIR, "pdfs");
 
 let configured = false;
 

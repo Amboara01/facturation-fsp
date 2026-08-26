@@ -1,9 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { DATA_DIR } from "../config.js";
 
 export function openDatabase(dbPath) {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -12,7 +10,7 @@ export function openDatabase(dbPath) {
   return db;
 }
 
-export const defaultDbPath = path.join(__dirname, "../../storage/db/app.db");
+export const defaultDbPath = path.join(DATA_DIR, "db/app.db");
 
 let singleton;
 
