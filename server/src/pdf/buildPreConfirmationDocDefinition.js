@@ -27,7 +27,7 @@ function assertNoForbiddenKeys(value, path = "") {
 }
 
 const FIXED_ISSUER_BLOCK_LINES = [
-  "Issued by: [Firm Name]",
+  "Issued by: FSP",
   "This document is confidential and prepared solely for the named introducer.",
   "It does not constitute an offer, and commission terms shown are indicative pending final settlement.",
 ];
