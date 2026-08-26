@@ -18,6 +18,13 @@ function validateRequestBody(body) {
       { status: 400 }
     );
   }
+  const { logoDataUrl } = body.introducer;
+  if (logoDataUrl && !/^data:image\/(png|jpeg);base64,/.test(logoDataUrl)) {
+    throw Object.assign(
+      new Error("introducer.logoDataUrl must be a PNG or JPEG data URL"),
+      { status: 400 }
+    );
+  }
 }
 
 export function createPreConfirmationsRouter({ db, pdfStorageDir = defaultPdfStorageDir }) {
@@ -63,6 +70,7 @@ export function createPreConfirmationsRouter({ db, pdfStorageDir = defaultPdfSto
         generatedAt,
         introducerName: introducer.name,
         counterpartyFields: introducer.counterpartyFields,
+        logoDataUrl: introducer.logoDataUrl,
         // Only the fields the PDF actually renders — commissionLabel (and anything else on
         // computedLines) is deliberately left out here, kept only in inputsSnapshot for audit.
         products: computedLines.map(

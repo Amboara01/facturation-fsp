@@ -64,6 +64,7 @@ function defaultIntroducer(products) {
   return {
     localId: makeId(),
     name: "",
+    logoDataUrl: null,
     counterpartyFields: { contactName: "", email: "", address: "" },
     commissionTerms: products.map((product) => defaultTermForProduct(product.id)),
   };
@@ -188,6 +189,7 @@ export default function PreConfirmationForm() {
           products: sanitizedProducts,
           introducer: {
             name: introducer.name,
+            logoDataUrl: introducer.logoDataUrl || undefined,
             counterpartyFields: sanitizeCounterpartyFields(introducer.counterpartyFields),
             commissionTerms: introducer.commissionTerms.map(({ productId, type, params }) => ({
               productId,

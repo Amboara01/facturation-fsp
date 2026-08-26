@@ -135,3 +135,39 @@ test("a deal with 2 introducers: 2 sequential POSTs create 2 rows and 2 distinct
   assert.ok(firstPdfText.includes("Introducer X"));
   assert.ok(!firstPdfText.includes("Introducer Y"));
 });
+
+// 1x1 transparent PNG.
+const TINY_PNG_DATA_URL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+test("a valid PNG logo is accepted and the pre-confirmation is still created", async () => {
+  const { app } = buildTestApp();
+
+  const { status, body } = await post(app, {
+    products,
+    introducer: {
+      name: "Introducer With Logo",
+      logoDataUrl: TINY_PNG_DATA_URL,
+      commissionTerms: [{ productId: "p1", type: "bpsOfNotional", params: { bps: 50 } }],
+    },
+  });
+
+  assert.equal(status, 201);
+  assert.ok(body.referenceNumber);
+});
+
+test("a malformed logoDataUrl is rejected with 400, not a raw crash", async () => {
+  const { app } = buildTestApp();
+
+  const { status, body } = await post(app, {
+    products,
+    introducer: {
+      name: "Introducer With Bad Logo",
+      logoDataUrl: "not-a-data-url",
+      commissionTerms: [{ productId: "p1", type: "bpsOfNotional", params: { bps: 50 } }],
+    },
+  });
+
+  assert.equal(status, 400);
+  assert.match(body.error, /logoDataUrl/);
+});

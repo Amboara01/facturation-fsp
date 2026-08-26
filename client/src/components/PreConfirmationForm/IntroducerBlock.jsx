@@ -1,4 +1,5 @@
 import CommissionTermInput from "./CommissionTermInput.jsx";
+import LogoUpload from "./LogoUpload.jsx";
 
 function updateCounterpartyField(introducer, field, value, onChange) {
   onChange({
@@ -40,6 +41,14 @@ export default function IntroducerBlock({ introducer, index, productsById, onCha
             required
           />
         </label>
+
+        <div className="field">
+          <span className="field-label">Logo (optional)</span>
+          <LogoUpload
+            value={introducer.logoDataUrl}
+            onChange={(logoDataUrl) => onChange({ ...introducer, logoDataUrl })}
+          />
+        </div>
 
         <details className="counterparty-details">
           <summary>Counterparty fields (optional)</summary>
