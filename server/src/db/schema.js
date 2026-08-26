@@ -8,5 +8,10 @@ export function initSchema(db) {
       pdf_path TEXT NOT NULL,
       inputs_snapshot TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS ReferenceSequences (
+      date_prefix TEXT PRIMARY KEY,
+      next_seq INTEGER NOT NULL
+    );
   `);
 }
