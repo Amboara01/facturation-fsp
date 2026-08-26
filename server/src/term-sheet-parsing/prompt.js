@@ -19,6 +19,9 @@ schema:
   1.50%), as a plain number with no percent sign. This is the product's disclosed total fee —
   not any introducer-specific commission or split of that fee. Return null if the document does
   not state the fee as a percentage of notional.
+- notionalCurrency: the ISO 4217 currency code the notional/principal amount is denominated in
+  (e.g. "EUR", "USD"), if stated. This is only the currency — never the amount itself (see hard
+  rule 1 below).
 - underlyings: an array of the name(s) of the underlying asset(s), index(es), share(s), or
   basket component(s) referenced by that product. Empty array if none are identifiable.
 
@@ -29,11 +32,13 @@ fabricate a value.
 Two separate hard rules, both non-negotiable, and both apply to EVERY product entry you return,
 no matter how many products are in the document:
 
-1. You must NEVER extract, infer, summarize, or return the notional or principal amount, in any
-   currency or form, under any field name, for any product. The notional is always entered
-   manually by a human operator and verified against the trade — never pre-filled from a
-   document. If a field above seems like it could be satisfied by a notional-looking number, it
-   cannot be; leave it null.
+1. You must NEVER extract, infer, summarize, or return the notional or principal amount itself,
+   under any field name, for any product. The notional amount is always entered manually by a
+   human operator and verified against the trade — never pre-filled from a document. If a field
+   above seems like it could be satisfied by a notional-looking number, it cannot be; leave it
+   null. This rule is about the amount only — the currency the notional is denominated in
+   (notionalCurrency) is a plain fact, not the confidential figure, and you SHOULD extract it
+   when stated.
 
 2. You must NEVER extract, infer, summarize, or return any introducer name, introducer
    commission, placement/distribution commission split, retrocession, rebate, or any information

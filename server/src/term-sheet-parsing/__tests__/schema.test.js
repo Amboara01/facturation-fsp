@@ -9,6 +9,7 @@ function sampleProduct(overrides = {}) {
     isin: "FR0013479930",
     tradeDate: "2026-09-15",
     totalUpfrontFeePercent: 1.5,
+    notionalCurrency: "EUR",
     underlyings: ["EURO STOXX 50"],
     ...overrides,
   };
@@ -19,24 +20,25 @@ test("top-level schema key is exactly 'products'", () => {
   assert.deepEqual(keys, ["products"]);
 });
 
-test("each product entry's key set is exactly the 6 allowed fields", () => {
+test("each product entry's key set is exactly the 7 allowed fields", () => {
   const productSchema = TermSheetExtractionSchema.shape.products.element;
   const keys = Object.keys(productSchema.shape).sort();
   assert.deepEqual(keys, [
     "isin",
     "issuer",
     "name",
+    "notionalCurrency",
     "totalUpfrontFeePercent",
     "tradeDate",
     "underlyings",
   ]);
 });
 
-test("notionalAmount and notionalCurrency are not among a product entry's fields", () => {
+test("notionalAmount is not among a product entry's fields, but notionalCurrency is", () => {
   const productSchema = TermSheetExtractionSchema.shape.products.element;
   const keys = Object.keys(productSchema.shape);
   assert.ok(!keys.includes("notionalAmount"));
-  assert.ok(!keys.includes("notionalCurrency"));
+  assert.ok(keys.includes("notionalCurrency"));
 });
 
 test("accepts a single-product array", () => {
@@ -69,6 +71,7 @@ test("accepts all-null fields within a product entry", () => {
         isin: null,
         tradeDate: null,
         totalUpfrontFeePercent: null,
+        notionalCurrency: null,
         underlyings: [],
       },
     ],

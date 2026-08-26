@@ -37,9 +37,10 @@ function isProductBlank(product) {
 
 // Starts from baseProduct (defaults to a fresh defaultProduct()) with whatever the extraction
 // actually found overlaid on top. Passing an existing product as baseProduct reuses its id,
-// turning this into an in-place update instead of a new row. notionalAmount/notionalCurrency
-// are never touched here — the server never returns them, so every extracted row still needs
-// the operator to type its notional by hand, same as a manually-added one.
+// turning this into an in-place update instead of a new row. notionalAmount is never touched
+// here — the server never returns it, so every extracted row still needs the operator to type
+// its notional by hand, same as a manually-added one. notionalCurrency, unlike the amount, is
+// safe to extract and does get overlaid when present.
 function buildProductFromExtraction(extracted, baseProduct = defaultProduct()) {
   const product = { ...baseProduct };
   if (extracted.name) {
@@ -53,6 +54,9 @@ function buildProductFromExtraction(extracted, baseProduct = defaultProduct()) {
   }
   if (extracted.totalUpfrontFeePercent != null) {
     product.totalUpfrontFeePercent = extracted.totalUpfrontFeePercent;
+  }
+  if (extracted.notionalCurrency) {
+    product.notionalCurrency = extracted.notionalCurrency;
   }
   if (extracted.issuer || extracted.underlyings?.length > 0) {
     product.extractedInfo = { issuer: extracted.issuer, underlyings: extracted.underlyings };

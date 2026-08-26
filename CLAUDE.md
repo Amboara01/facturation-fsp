@@ -119,10 +119,13 @@ output) with a system prompt (`prompt.js`) and a Zod schema (`schema.js`).
   than one product (multi-tranche notes, baskets), so extraction returns one entry per product
   found, never a single flat object.
 - **Two things are structurally never extractable, not just prompted against**: the notional
-  (always human-typed and verified, same trust tier as commission) and anything about the
-  introducer's commission/split. Neither has a field in the schema at all. `totalUpfrontFeePercent`
-  *is* extracted — it's the product's disclosed total fee, a legitimate term-sheet figure,
-  distinct from the confidential introducer-specific split of that fee.
+  *amount* (always human-typed and verified, same trust tier as commission) and anything about
+  the introducer's commission/split. Neither has a field in the schema at all.
+  `totalUpfrontFeePercent` *is* extracted — it's the product's disclosed total fee, a legitimate
+  term-sheet figure, distinct from the confidential introducer-specific split of that fee.
+  `notionalCurrency` is also extracted (unlike the amount, the currency alone is a non-sensitive
+  fact, same tier as ISIN or trade date) — only the amount itself carries the "human must type
+  it" trust requirement.
 - Failures collapse to one thing the client needs — 400 (bad upload), 422 (nothing usable found),
   502 (Anthropic API/network failure) — all as `{ error: message }`, same convention as
   `routes/preConfirmations.js`. The client's `apiPost`-family helpers already throw on non-2xx, so

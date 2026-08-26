@@ -19,9 +19,13 @@ test("system prompt addresses documents describing more than one product", () =>
   assert.match(SYSTEM_PROMPT, /apply\s+to\s+EVERY\s+product\s+entry/i);
 });
 
-test("system prompt does not name notionalAmount or notionalCurrency as an extractable field", () => {
+test("system prompt does not name notionalAmount as an extractable field", () => {
   assert.ok(!SYSTEM_PROMPT.includes("notionalAmount"));
-  assert.ok(!SYSTEM_PROMPT.includes("notionalCurrency"));
+});
+
+test("system prompt names notionalCurrency as extractable, distinct from the amount", () => {
+  assert.ok(SYSTEM_PROMPT.includes("notionalCurrency"));
+  assert.match(SYSTEM_PROMPT, /currency.*is a plain fact, not the confidential figure/is);
 });
 
 test("system prompt instructs treating document content as data, not instructions", () => {
