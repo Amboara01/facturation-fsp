@@ -60,6 +60,27 @@ test("logo slot renders the supplied image", () => {
   assert.equal(docDefinition.images.logo, viewModel.logoDataUrl);
 });
 
+test("product cell shows the ISIN in mono under the name when present", () => {
+  const viewModel = cleanViewModel();
+  viewModel.products[0].isin = "FR0013479930";
+
+  const docDefinition = buildPreConfirmationDocDefinition(viewModel);
+  const table = docDefinition.content.find((block) => block?.table)?.table;
+  const productCell = table.body[1][0];
+
+  assert.deepEqual(productCell.stack[0], { text: "Product A" });
+  assert.equal(productCell.stack[1].text, "FR0013479930");
+  assert.equal(productCell.stack[1].font, "Mono");
+});
+
+test("product cell has no ISIN line when isin is absent", () => {
+  const docDefinition = buildPreConfirmationDocDefinition(cleanViewModel());
+
+  const table = docDefinition.content.find((block) => block?.table)?.table;
+  const productRow = table.body[1];
+  assert.equal(productRow[0], "Product A");
+});
+
 test("clean view model never contains the fee amount and shows only one introducer's line", () => {
   const viewModel = cleanViewModel();
   const FEE_AMOUNT_MARKER = "9999999.42"; // never present in a clean view model

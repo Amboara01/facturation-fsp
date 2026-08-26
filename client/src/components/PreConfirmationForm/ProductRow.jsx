@@ -11,6 +11,24 @@ function derivedFeeHint(product) {
   return `≈ ${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${notionalCurrency}`;
 }
 
+// issuer/underlyings have no submitted form field — this is read-only context carried on the
+// product object from a term sheet upload, dropped automatically at submit time since
+// PreConfirmationForm's sanitizedProducts mapping only picks the fields it actually sends.
+function extractedInfoLine(product) {
+  const info = product.extractedInfo;
+  if (!info) {
+    return null;
+  }
+  const parts = [];
+  if (info.issuer) {
+    parts.push(`Issuer: ${info.issuer}`);
+  }
+  if (info.underlyings?.length > 0) {
+    parts.push(`Underlyings: ${info.underlyings.join(", ")}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export default function ProductRow({ product, index, onChange, onRemove, canRemove }) {
   return (
     <div className="card product-card">
@@ -24,17 +42,33 @@ export default function ProductRow({ product, index, onChange, onRemove, canRemo
       </div>
 
       <div className="card-body">
-        <label className="field field-full">
-          <span className="field-label">
-            Name<span className="req">*</span>
-          </span>
-          <input
-            type="text"
-            value={product.name}
-            onChange={(e) => updateField(product, "name", e.target.value, onChange)}
-            required
-          />
-        </label>
+        <div className="field-row">
+          <label className="field">
+            <span className="field-label">
+              Name<span className="req">*</span>
+            </span>
+            <input
+              type="text"
+              value={product.name}
+              onChange={(e) => updateField(product, "name", e.target.value, onChange)}
+              required
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">ISIN</span>
+            <input
+              type="text"
+              value={product.isin}
+              onChange={(e) => updateField(product, "isin", e.target.value.toUpperCase(), onChange)}
+              maxLength={12}
+              placeholder="e.g. FR0013479930"
+            />
+          </label>
+        </div>
+
+        {extractedInfoLine(product) && (
+          <p className="derived-hint">{extractedInfoLine(product)}</p>
+        )}
 
         <div className="field-row">
           <label className="field">

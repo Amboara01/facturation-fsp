@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ProductRow from "./ProductRow.jsx";
 import IntroducerBlock from "./IntroducerBlock.jsx";
+import TermSheetUpload from "./TermSheetUpload.jsx";
 import { createPreConfirmation } from "../../api/preConfirmations.js";
 
 function makeId() {
@@ -15,6 +16,7 @@ function defaultProduct() {
   return {
     id: makeId(),
     name: "",
+    isin: "",
     notionalAmount: 0,
     notionalCurrency: "EUR",
     totalUpfrontFeePercent: 0,
@@ -24,6 +26,38 @@ function defaultProduct() {
 
 function defaultTermForProduct(productId) {
   return { productId, type: "flatAmount", params: { amount: 0, currency: "EUR" } };
+}
+
+// True only when none of the fields an operator would actually type have been touched yet —
+// notionalCurrency ("EUR") and tradeDate (today) are left out on purpose: both are plausible
+// values someone genuinely wants, not placeholder blanks, so they don't count as "untouched."
+function isProductBlank(product) {
+  return !product.name && !product.isin && !product.notionalAmount && !product.totalUpfrontFeePercent;
+}
+
+// Starts from baseProduct (defaults to a fresh defaultProduct()) with whatever the extraction
+// actually found overlaid on top. Passing an existing product as baseProduct reuses its id,
+// turning this into an in-place update instead of a new row. notionalAmount/notionalCurrency
+// are never touched here — the server never returns them, so every extracted row still needs
+// the operator to type its notional by hand, same as a manually-added one.
+function buildProductFromExtraction(extracted, baseProduct = defaultProduct()) {
+  const product = { ...baseProduct };
+  if (extracted.name) {
+    product.name = extracted.name;
+  }
+  if (extracted.isin) {
+    product.isin = extracted.isin;
+  }
+  if (extracted.tradeDate) {
+    product.tradeDate = extracted.tradeDate;
+  }
+  if (extracted.totalUpfrontFeePercent != null) {
+    product.totalUpfrontFeePercent = extracted.totalUpfrontFeePercent;
+  }
+  if (extracted.issuer || extracted.underlyings?.length > 0) {
+    product.extractedInfo = { issuer: extracted.issuer, underlyings: extracted.underlyings };
+  }
+  return product;
 }
 
 function defaultIntroducer(products) {
@@ -48,13 +82,56 @@ export default function PreConfirmationForm() {
 
   const productsById = new Map(products.map((product) => [product.id, product]));
 
-  function addProduct() {
-    const product = defaultProduct();
-    setProducts([...products, product]);
+  // Shared by both ways of adding products — one manual row, or one-to-many rows from a term
+  // sheet upload — so every introducer's commissionTerms always stays in sync with the product
+  // list regardless of which path added to it.
+  function appendProducts(newProducts) {
+    setProducts([...products, ...newProducts]);
     setIntroducers(
       introducers.map((introducer) => ({
         ...introducer,
-        commissionTerms: [...introducer.commissionTerms, defaultTermForProduct(product.id)],
+        commissionTerms: [
+          ...introducer.commissionTerms,
+          ...newProducts.map((product) => defaultTermForProduct(product.id)),
+        ],
+      }))
+    );
+  }
+
+  function addProduct() {
+    appendProducts([defaultProduct()]);
+  }
+
+  function handleExtractedProducts(extractedProducts) {
+    if (extractedProducts.length === 0) {
+      return;
+    }
+
+    // If the form is still showing nothing but the untouched starting row, the first extracted
+    // product populates that row in place rather than leaving a dangling empty card alongside
+    // the new ones. Every product after the first is always a new row — only ever one row gets
+    // this treatment, never "whichever rows happen to be blank." Deliberately NOT built as
+    // "updateProduct(...) then appendProducts(...)" — two setState-triggering calls in the same
+    // handler would each read the same stale `products` closure snapshot, so the second call
+    // would silently discard the first's update. One products array, one introducers array,
+    // one pair of setState calls.
+    const populateInPlace = products.length === 1 && isProductBlank(products[0]);
+    const [first, ...rest] = extractedProducts;
+    const newRows = (populateInPlace ? rest : extractedProducts).map((product) =>
+      buildProductFromExtraction(product)
+    );
+    const nextProducts = populateInPlace
+      ? [buildProductFromExtraction(first, products[0]), ...newRows]
+      : [...products, ...newRows];
+
+    setProducts(nextProducts);
+    setIntroducers(
+      introducers.map((introducer) => ({
+        ...introducer,
+        commissionTerms: [
+          ...introducer.commissionTerms,
+          ...newRows.map((product) => defaultTermForProduct(product.id)),
+        ],
       }))
     );
   }
@@ -92,9 +169,10 @@ export default function PreConfirmationForm() {
     setSubmitting(true);
     setResults([]);
 
-    const sanitizedProducts = products.map(({ id, name, notionalAmount, notionalCurrency, totalUpfrontFeePercent, tradeDate }) => ({
+    const sanitizedProducts = products.map(({ id, name, isin, notionalAmount, notionalCurrency, totalUpfrontFeePercent, tradeDate }) => ({
       id,
       name,
+      isin,
       notionalAmount,
       notionalCurrency,
       totalUpfrontFeePercent,
@@ -148,9 +226,12 @@ export default function PreConfirmationForm() {
             />
           ))}
         </div>
-        <button type="button" className="btn btn-outline" onClick={addProduct}>
-          + Add product
-        </button>
+        <div className="product-actions">
+          <button type="button" className="btn btn-outline" onClick={addProduct}>
+            + Add product
+          </button>
+          <TermSheetUpload onExtracted={handleExtractedProducts} />
+        </div>
       </section>
 
       <section className="form-section">

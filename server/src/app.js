@@ -6,6 +6,7 @@ import { getDb } from "./db/connection.js";
 import { initSchema } from "./db/schema.js";
 import { createPreConfirmationsRouter } from "./routes/preConfirmations.js";
 import { defaultPdfStorageDir } from "./pdf/generatePdfFile.js";
+import { createTermSheetRouter } from "./term-sheet-parsing/router.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,6 +24,7 @@ export function createApp({ db = getDb(), pdfStorageDir = defaultPdfStorageDir }
   });
 
   app.use("/api/preconfirmations", createPreConfirmationsRouter({ db, pdfStorageDir }));
+  app.use("/api/term-sheets", createTermSheetRouter());
 
   if (isProduction) {
     const clientDistPath = path.join(__dirname, "../../client/dist");

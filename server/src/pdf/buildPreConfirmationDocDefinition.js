@@ -60,6 +60,18 @@ function formatAmount(amount, currency) {
   return `${amount.toFixed(2)} ${currency}`;
 }
 
+function buildProductCell(product) {
+  if (!product.isin) {
+    return product.name;
+  }
+  return {
+    stack: [
+      { text: product.name },
+      { text: product.isin, fontSize: 8, color: "#555555", font: "Mono" },
+    ],
+  };
+}
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function formatTradeDate(isoDate) {
@@ -109,7 +121,7 @@ export function buildPreConfirmationDocDefinition(viewModel) {
   const { referenceNumber, generatedAt, introducerName, counterpartyFields, products, logoDataUrl } = viewModel;
 
   const productRows = products.map((product) => [
-    product.name,
+    buildProductCell(product),
     { text: formatNotional(product.notionalAmount, product.notionalCurrency), font: "Mono" },
     formatTradeDate(product.tradeDate),
     { text: formatAmount(product.computedAmount, product.computedCurrency), font: "Mono" },

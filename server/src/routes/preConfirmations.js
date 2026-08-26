@@ -45,6 +45,7 @@ export function createPreConfirmationsRouter({ db, pdfStorageDir = defaultPdfSto
         });
         return {
           name: product.name,
+          isin: product.isin,
           notionalAmount: product.notionalAmount,
           notionalCurrency: product.notionalCurrency,
           tradeDate: product.tradeDate,
@@ -65,8 +66,9 @@ export function createPreConfirmationsRouter({ db, pdfStorageDir = defaultPdfSto
         // Only the fields the PDF actually renders — commissionLabel (and anything else on
         // computedLines) is deliberately left out here, kept only in inputsSnapshot for audit.
         products: computedLines.map(
-          ({ name, notionalAmount, notionalCurrency, tradeDate, computedAmount, computedCurrency }) => ({
+          ({ name, isin, notionalAmount, notionalCurrency, tradeDate, computedAmount, computedCurrency }) => ({
             name,
+            isin,
             notionalAmount,
             notionalCurrency,
             tradeDate,

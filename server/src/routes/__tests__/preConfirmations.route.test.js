@@ -14,6 +14,15 @@ const SECRET_FEE_MARKER = "432100.00";
 // (e.g. `<5072652d>` for "Pre-"), not literal ASCII bytes — decode those runs so a
 // substring scan over the PDF bytes actually means something instead of trivially
 // passing against opaque hex.
+//
+// This only decodes correctly for the standard-14 Helvetica text (1 byte per glyph, code ==
+// character). Our embedded "Mono" font (notionals/amounts/ISINs) uses CID/Identity-H glyph
+// codes resolved via a separate ToUnicode CMap, which this helper does NOT decode — hand-rolling
+// a correct CMap-aware decoder here isn't worth it for a test helper (see
+// buildPreConfirmationDocDefinition.test.js for precise, non-PDF-byte-level assertions on
+// Mono-rendered content like the ISIN). Absence checks below (`!includes(SECRET_FEE_MARKER)`)
+// still hold for Helvetica-rendered text; they're not a strong guarantee for Mono-rendered
+// cells specifically.
 function decodeHexTextRuns(buffer) {
   const raw = buffer.toString("latin1");
   const hexRuns = raw.match(/<([0-9a-fA-F]{2,})>/g) || [];
@@ -61,6 +70,7 @@ const products = [
   {
     id: "p1",
     name: "Product A",
+    isin: "FR0013479930",
     notionalAmount: 1_000_000,
     notionalCurrency: "EUR",
     totalUpfrontFeePercent: 43.21,
