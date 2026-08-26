@@ -187,6 +187,10 @@ select:focus-visible {
   color: var(--slate);
 }
 
+.field-warning {
+  color: var(--danger);
+}
+
 /* ==========================================================================
    Counterparty details — visually secondary, since it's optional
    ========================================================================== */
@@ -245,6 +249,48 @@ select:focus-visible {
   font-weight: 600;
   font-size: 13px;
   flex: 0 0 140px;
+  padding-bottom: var(--space-2);
+}
+
+.share-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.entry-mode-toggle {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.entry-mode-toggle button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px var(--space-2);
+  cursor: pointer;
+}
+
+.entry-mode-toggle button.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-surface);
+}
+
+.fraction-entry {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.fraction-slash {
+  font-size: 18px;
+  color: var(--slate);
   padding-bottom: var(--space-2);
 }
 
