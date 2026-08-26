@@ -8,9 +8,8 @@ A tool for a non-technical middle-office operator to generate correct, confident
 pre-confirmations for introducer commissions on structured product deals. The full product
 spec, including the commission-type table, confidentiality hard constraints, data model, and
 acceptance criteria, lives in `spec.md` at the repo root — read it before making any change to
-commission calculation, PDF content, or the data model. `spec.md` also defines Phase 2 (term
-sheet upload + Claude extraction, logo upload) as not-yet-built scope; everything currently in
-the repo is Phase 1.
+commission calculation, PDF content, or the data model. Both Phase 1 and Phase 2 (term sheet
+upload + Claude extraction, logo upload) are now built.
 
 ## Commands
 
@@ -30,19 +29,32 @@ Run from the repo root unless noted.
     default discovery only recognizes `test`/`tests` dirs, not `__tests__`) — always pass an
     explicit glob or file path, as the `test` script does.
 - `cd client && npm run lint` — runs `oxlint` on the client.
+- `ANTHROPIC_API_KEY` must be set in `server/.env` for term-sheet extraction to work (see
+  `server/.env.example`); every other feature works with no env vars beyond the defaults.
 
-There is no test suite for the client; UI changes should be manually verified against the
-running dev server.
+There is no client-side test suite at all — UI changes, including the product/introducer state
+logic in `PreConfirmationForm.jsx`, are manually verified against the running dev server (and, in
+practice, via a live browser session), not by automated tests. Be extra careful with any change
+that touches multiple `setState` calls in one handler there — see the stale-closure note below.
+
+## Deployment
+
+`railway.toml` + `server/src/config.js` (a `DATA_DIR` env var, defaulting to `server/storage`
+locally) exist so the SQLite file and generated PDFs can point at a mounted persistent volume in
+production. `better-sqlite3` is pinned to `^12.11.1`, not the `13.x` line — every `13.x` release
+currently has zero prebuilt binaries published upstream, which forces a `node-gyp` source compile
+that fails on Railway's build image (no Python). Don't bump past 12.x without checking upstream
+has fixed that.
 
 ## Architecture
 
-Two independent npm packages with no shared code: `server/` (Express + SQLite + pdfmake) and
-`client/` (Vite + React, no router — single-page app with local view-switching state). The root
-`package.json` only orchestrates both via `concurrently`.
+Two independent npm packages with no shared code: `server/` (Express + SQLite + pdfmake +
+`@anthropic-ai/sdk`) and `client/` (Vite + React, no router — single-page app with local
+view-switching state). The root `package.json` only orchestrates both via `concurrently`.
 
 ### No "deal" entity — one request = one introducer = one row = one PDF
 
-There is no `Deal`/`Product` table and no server-side concept of a multi-introducer deal.
+There is no `Deal` table and no server-side concept of a multi-introducer deal.
 `POST /api/preconfirmations` accepts `products[]` plus exactly **one** `introducer` object, and
 creates exactly one `PreConfirmations` row and one PDF file. A deal with N introducers means the
 client (`PreConfirmationForm.jsx`) fires N sequential requests, reusing the same `products[]`
@@ -74,6 +86,10 @@ it in three independent layers:
    builds this view model by explicitly picking safe fields off `computedLines`, not by spreading
    or passing the raw product/introducer objects through.
 
+The same "structural exclusion, not just an instruction" philosophy is reused in
+`term-sheet-parsing/schema.js` (below): the Zod schema has no notional or introducer/commission
+field at all, so the model has nowhere to put one even if a document's text tried to induce it to.
+
 When adding a new field anywhere near money, check whether it needs to go in the forbidden-key
 list and whether the serializer needs to keep excluding it.
 
@@ -86,40 +102,105 @@ a new commission type by adding one calculator module and one `registerCommissio
 no other call site changes. All money math routes through `money.js`'s `roundHalfUpToCents()`
 (half-up to 2 decimals, with an epsilon nudge to work around float representation errors like
 `1.005 * 100 !== 100.5`) — never round ad hoc elsewhere. The client's
-`constants/commissionTypes.js` list is manually kept in sync with the registry keys.
+`constants/commissionTypes.js` list is manually kept in sync with the registry keys. The
+"Share of total fees" input in `CommissionTermInput.jsx` also supports an alternate fraction
+(numerator/denominator) entry mode purely as a client-side precision aid — it just computes a
+full-float-precision percentage and writes it into the same `sharePercent` param; the server never
+knows a fraction was involved.
+
+### Term sheet extraction (`server/src/term-sheet-parsing/`)
+
+Isolated in its own directory so it can be removed cleanly. `POST /api/term-sheets/parse` takes a
+PDF upload (`multer`, in-memory, PNG/JPEG... no — PDF only, 20MB cap) and calls
+`client.messages.parse()` (Claude Opus 5, via `@anthropic-ai/sdk`'s `zodOutputFormat` structured
+output) with a system prompt (`prompt.js`) and a Zod schema (`schema.js`).
+
+- **Response is always `{ products: [...] }`, an array** — a single term sheet can describe more
+  than one product (multi-tranche notes, baskets), so extraction returns one entry per product
+  found, never a single flat object.
+- **Two things are structurally never extractable, not just prompted against**: the notional
+  (always human-typed and verified, same trust tier as commission) and anything about the
+  introducer's commission/split. Neither has a field in the schema at all. `totalUpfrontFeePercent`
+  *is* extracted — it's the product's disclosed total fee, a legitimate term-sheet figure,
+  distinct from the confidential introducer-specific split of that fee.
+- Failures collapse to one thing the client needs — 400 (bad upload), 422 (nothing usable found),
+  502 (Anthropic API/network failure) — all as `{ error: message }`, same convention as
+  `routes/preConfirmations.js`. The client's `apiPost`-family helpers already throw on non-2xx, so
+  no special client-side branching is needed.
+- Nothing about the request or response is logged, and the PDF is never persisted (pure
+  request/response, no DB row).
+
+Client side, `TermSheetUpload.jsx` lives next to "+ Add product" (not inside a single
+`ProductRow`, since one upload can yield several products). `PreConfirmationForm.jsx`'s
+`handleExtractedProducts` has one deliberate wrinkle worth knowing before touching it: if the form
+still shows nothing but the single untouched starting row (checked via `isProductBlank` —
+`name`/`isin`/`notionalAmount`/`totalUpfrontFeePercent` all still at their pristine defaults;
+`notionalCurrency`/`tradeDate` are deliberately excluded from that check since "EUR"/today are
+legitimate values, not blank-indicators), the first extracted product populates that row *in
+place* instead of leaving a dangling empty card; every product after the first is always a new
+row. This is computed as **one** `setProducts` + **one** `setIntroducers` call, not
+"`updateProduct()` then `appendProducts()`" — calling two state-updating helpers back to back in
+the same handler was tried first and silently dropped the first update, because both would have
+read the same stale `products` closure snapshot (`setProducts` doesn't update that binding
+synchronously). Any future handler that needs to touch an existing row and add new ones in the
+same event needs to avoid that same trap.
 
 ### PDF generation (`server/src/pdf/`)
 
 Uses `pdfmake`'s server-side `PdfPrinter`/`createPdf` API (not the older static `PdfPrinter`
 constructor export — see `generatePdfFile.js` for the actual import/usage shape, since pdfmake's
-docs/examples online often show an older API). Only the base-14 standard fonts are used
-(`fonts.js`), gated through a `localAccessPolicy` callback restricted to exactly those font
-names — do not broaden that policy to allow arbitrary local file access. Generated PDFs are
-deliberately **uncompressed** (`compress: false` in the doc definition) so that tests can do a
-meaningful byte-level substring scan for confidential data; if compression is ever turned on,
-the hex-decoding scan in `routes/__tests__/preConfirmations.route.test.js` needs rethinking.
-PDF text is rendered as hex-encoded glyph runs (`<...> TJ`), not literal ASCII bytes — see
-`decodeHexTextRuns()` in that test file before writing any new PDF-content assertions.
+docs/examples online often show an older API). Two font families are registered in `fonts.js`:
+the base-14 standard Helvetica (body text) and a vendored **JetBrains Mono** (`font-files/`, SIL
+OFL) used specifically for notionals, commission amounts, and ISINs — chosen for unambiguous
+digit/letter shapes, not decoration. Local file access for fonts is gated through a
+`localAccessPolicy` callback restricted to exactly the standard font names plus the two vendored
+TTF paths — do not broaden that policy. Generated PDFs are deliberately **uncompressed**
+(`compress: false`) so tests can do a byte-level substring scan for confidential data — but that
+scan (`decodeHexTextRuns()` in `routes/__tests__/preConfirmations.route.test.js`) only correctly
+decodes the standard-Helvetica text (1 byte per glyph). The embedded Mono font uses CID/Identity-H
+glyph codes resolved via a separate ToUnicode CMap that the test helper does **not** decode — the
+`!includes(SECRET_FEE_MARKER)` absence checks still hold for Helvetica-rendered text, but are not
+a rigorous guarantee for Mono-rendered cells (Amount/Notional/ISIN). This is a known, documented
+gap, not a secret one — see the comment at the top of that test file before relying on it or
+extending it.
 
-There's no logo upload yet (Phase 2). `buildPreConfirmationDocDefinition.js` accepts an optional
-`logoDataUrl` on the view model and renders nothing at all when it's absent — no placeholder box
-or text — via pdfmake's `images` map (`{ image: 'logo' }` + `docDefinition.images.logo`).
+Logo upload is built: `buildPreConfirmationDocDefinition.js` accepts an optional `logoDataUrl` on
+the view model (PNG/JPEG data URL only — that's all pdfkit's image embedding supports, no
+SVG/GIF/WebP) and renders nothing at all when it's absent — no placeholder box or text — via
+pdfmake's `images` map. Client side it lives on the *introducer* (`LogoUpload.jsx` inside
+`IntroducerBlock.jsx`, PNG/JPEG only, 2MB cap, converted to a data URL via `FileReader`), and
+`routes/preConfirmations.js` validates the shape of `introducer.logoDataUrl` (a
+`data:image/(png|jpeg);base64,` prefix) before it ever reaches pdfmake, so a malformed value is a
+clean 400 rather than an opaque 500 from deep inside pdfkit.
 
-PDFs are stored on disk under `server/storage/pdfs/` (gitignored) and served only through the
-explicit `GET /api/preconfirmations/:id/pdf` route, never via `express.static` — avoids exposing
-a guessable/traversable public path to confidential documents. Once generated, a
-`PreConfirmations` row and its PDF are write-once; there is no edit/regenerate endpoint.
+PDFs are stored on disk under `DATA_DIR/pdfs/` (gitignored) and served only through the explicit
+`GET /api/preconfirmations/:id/pdf` route, never via `express.static` — avoids exposing a
+guessable/traversable public path to confidential documents. Once generated, a `PreConfirmations`
+row and its PDF are write-once; there is no edit/regenerate endpoint.
 
-### Storage (`server/src/db/`)
+### Storage (`server/src/db/`, `server/src/config.js`)
 
 SQLite via `better-sqlite3`, a single `PreConfirmations` table (see `db/schema.js`) matching
 `spec.md`'s data model exactly — `inputs_snapshot` (JSON text) is the audit source of truth, not
-a normalized deals/products/commissions schema. `db/connection.js` exposes both a lazy
-production singleton (`getDb()`, file at `server/storage/db/app.db`, gitignored) and
-`openDatabase(path)` for tests to open an isolated `:memory:` instance — `app.js`'s `createApp()`
-takes `{ db, pdfStorageDir }` overrides for exactly this reason; route tests boot a real Express
-app against an in-memory DB and a temp PDF directory rather than mocking anything.
+a normalized deals/products/commissions schema. Adding a new field to a product or introducer
+(e.g. `isin`, `extractedInfo`, `logoDataUrl`) generally needs **no DB migration at all** — it just
+flows into the same JSON column, which is the whole point of that design choice; only add a
+migration if the *shape* of the table itself needs to change. `db/connection.js` exposes both a
+lazy production singleton (`getDb()`, path from `config.js`'s `DATA_DIR`) and `openDatabase(path)`
+for tests to open an isolated `:memory:` instance — `app.js`'s `createApp()` takes
+`{ db, pdfStorageDir }` overrides for exactly this reason; route tests boot a real Express app
+against an in-memory DB and a temp PDF directory rather than mocking anything.
 
 Reference numbers are `PC-YYYYMMDD-NNN`, sequential per day, generated by counting existing
 same-day rows (`util/referenceNumber.js`) — not strictly race-safe under concurrent writes, which
 is an accepted limitation given `spec.md`'s single-operator assumption.
+
+### Client design system (`client/src/index.css`, `client/src/App.css`)
+
+Deliberate, not default: Public Sans (headings + body) and JetBrains Mono (money/reference/date
+values, matching the PDF's font choice) loaded via Google Fonts, a small burgundy accent
+(`--accent`), and a fixed spacing scale (`--space-1` through `--space-6`, 4/8/16/24/32/48px)
+applied almost entirely via `gap` on flex/grid containers rather than ad hoc margins, so each
+spacing relationship has one source of truth. Introducer cards get a left accent "spine" — the
+one deliberate signature element, tied to the actual domain rule that each introducer's document
+is separate and self-contained, not decoration for its own sake.
