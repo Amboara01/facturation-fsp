@@ -1,98 +1,392 @@
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
 .app {
-  max-width: 900px;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: var(--space-5) var(--space-4) var(--space-6);
 }
+
+@media (max-width: 640px) {
+  .app {
+    padding: var(--space-4) var(--space-3) var(--space-5);
+  }
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.app-header h1 {
+  font-size: 22px;
+  letter-spacing: -0.2px;
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
 
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--line);
 }
 
 .tabs button {
-  padding: 8px 16px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--slate);
+  padding: var(--space-2) 0;
   border: none;
+  border-bottom: 2px solid transparent;
   background: none;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
 }
 
 .tabs button.active {
-  border-bottom-color: var(--accent);
   color: var(--accent);
-  font-weight: 600;
+  border-bottom-color: var(--accent);
 }
 
-.preconfirmation-form section {
-  margin-bottom: 24px;
-}
+/* ==========================================================================
+   Form sections — gap on the flex parent is the single source of truth for
+   spacing between sections; nothing else sets vertical margin on a section.
+   ========================================================================== */
 
-.product-row,
-.introducer-block {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-}
-
-.product-row label,
-.introducer-block > label,
-.commission-term-input label {
+.preconfirmation-form {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
-  gap: 4px;
+  gap: var(--space-6);
 }
 
-.commission-terms {
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form-section h2 {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--slate);
+}
+
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-section > .btn {
+  align-self: flex-start;
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: var(--space-4);
+}
+
+.introducer-card {
+  border-left: 4px solid var(--accent);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.card-header h3 {
+  font-size: 15px;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ==========================================================================
+   Fields — tight grouping within a row (space-2), clearer separation
+   between rows (space-3, inherited from .card-body's gap).
+   ========================================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate);
+}
+
+.req {
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+.field-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  .field-row {
+    flex-direction: column;
+  }
+}
+
+.field-narrow {
+  flex: 0 0 96px;
+}
+
+@media (max-width: 560px) {
+  .field-narrow {
+    flex: 1;
+  }
+}
+
+.field-full {
   width: 100%;
 }
 
-.commission-term-input {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-  padding: 8px 0;
-  border-top: 1px solid var(--border);
+input,
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-2);
 }
 
-.commission-term-input .product-label {
-  font-weight: 600;
-  min-width: 140px;
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .derived-hint {
   font-size: 12px;
-  color: var(--text-muted, #888);
-  margin-top: 2px;
+  color: var(--slate);
 }
 
+/* ==========================================================================
+   Counterparty details — visually secondary, since it's optional
+   ========================================================================== */
+
+.counterparty-details {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+}
+
+.counterparty-details summary {
+  font-size: 13px;
+  color: var(--slate);
+  cursor: pointer;
+}
+
+.counterparty-details .field-row,
+.counterparty-details .field-full {
+  margin-top: var(--space-3);
+}
+
+/* ==========================================================================
+   Commission terms
+   ========================================================================== */
+
+.commission-terms {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.commission-terms h4 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.commission-term-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.commission-term-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.commission-term-row .product-label {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 0 0 140px;
+  padding-bottom: var(--space-2);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  font: inherit;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--surface);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: #6b2733;
+}
+
+.btn-primary:disabled {
+  background: var(--slate);
+  border-color: var(--slate);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-outline:hover {
+  background: var(--accent-surface);
+}
+
+.btn-ghost {
+  background: none;
+  color: var(--slate);
+  border-color: transparent;
+  padding: var(--space-1) var(--space-2);
+  font-size: 13px;
+}
+
+.btn-ghost:hover {
+  color: var(--danger);
+}
+
+.btn-small {
+  padding: var(--space-1) var(--space-2);
+  font-size: 13px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-4);
+}
+
+.submit-row .btn-primary {
+  padding: var(--space-2) var(--space-5);
+}
+
+/* ==========================================================================
+   Submission results
+   ========================================================================== */
+
 .results {
-  margin-top: 16px;
   list-style: none;
   padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .results li {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.result-success {
+  border-left: 3px solid var(--accent);
+}
+
+.result-error {
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   History
+   ========================================================================== */
+
+.empty-state {
+  color: var(--slate);
+  padding: var(--space-5) 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 .history-list {
   width: 100%;
   border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .history-list th,
 .history-list td {
   text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.history-list th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slate);
+  font-weight: 500;
+}
+
+.history-list tr:last-child td {
+  border-bottom: none;
 }

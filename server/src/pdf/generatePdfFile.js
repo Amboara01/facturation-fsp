@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import pdfMake from "pdfmake";
-import { fontDescriptors, isStandardFontName } from "./fonts.js";
+import { fontDescriptors, isAllowedFontPath } from "./fonts.js";
 import { DATA_DIR } from "../config.js";
 
 export const defaultPdfStorageDir = path.join(DATA_DIR, "pdfs");
@@ -13,7 +13,7 @@ function ensureConfigured() {
     return;
   }
   pdfMake.setFonts(fontDescriptors);
-  pdfMake.setLocalAccessPolicy(isStandardFontName);
+  pdfMake.setLocalAccessPolicy(isAllowedFontPath);
   pdfMake.setUrlAccessPolicy(() => false);
   configured = true;
 }

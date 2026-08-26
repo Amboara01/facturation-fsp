@@ -134,57 +134,70 @@ export default function PreConfirmationForm() {
 
   return (
     <form onSubmit={handleSubmit} className="preconfirmation-form">
-      <section>
+      <section className="form-section">
         <h2>Products</h2>
-        {products.map((product) => (
-          <ProductRow
-            key={product.id}
-            product={product}
-            onChange={updateProduct}
-            onRemove={() => removeProduct(product.id)}
-            canRemove={products.length > 1}
-          />
-        ))}
-        <button type="button" onClick={addProduct}>
-          Add product
+        <div className="card-stack">
+          {products.map((product, i) => (
+            <ProductRow
+              key={product.id}
+              product={product}
+              index={i + 1}
+              onChange={updateProduct}
+              onRemove={() => removeProduct(product.id)}
+              canRemove={products.length > 1}
+            />
+          ))}
+        </div>
+        <button type="button" className="btn btn-outline" onClick={addProduct}>
+          + Add product
         </button>
       </section>
 
-      <section>
+      <section className="form-section">
         <h2>Introducers</h2>
-        {introducers.map((introducer) => (
-          <IntroducerBlock
-            key={introducer.localId}
-            introducer={introducer}
-            productsById={productsById}
-            onChange={updateIntroducer}
-            onRemove={() => removeIntroducer(introducer.localId)}
-            canRemove={introducers.length > 1}
-          />
-        ))}
-        <button type="button" onClick={addIntroducer}>
-          Add introducer
+        <div className="card-stack">
+          {introducers.map((introducer, i) => (
+            <IntroducerBlock
+              key={introducer.localId}
+              introducer={introducer}
+              index={i + 1}
+              productsById={productsById}
+              onChange={updateIntroducer}
+              onRemove={() => removeIntroducer(introducer.localId)}
+              canRemove={introducers.length > 1}
+            />
+          ))}
+        </div>
+        <button type="button" className="btn btn-outline" onClick={addIntroducer}>
+          + Add introducer
         </button>
       </section>
 
-      <button type="submit" disabled={submitting}>
-        {submitting ? "Generating..." : "Generate pre-confirmation(s)"}
-      </button>
+      <div className="submit-row">
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
+          {submitting ? "Generating…" : "Generate pre-confirmation(s)"}
+        </button>
+      </div>
 
       {results.length > 0 && (
         <ul className="results">
           {results.map((result) => (
-            <li key={result.introducerName + result.status}>
+            <li
+              key={result.introducerName + result.status}
+              className={result.status === "success" ? "result-success" : "result-error"}
+            >
               {result.status === "success" ? (
                 <>
-                  {result.introducerName}: {result.referenceNumber} —{" "}
+                  <strong>{result.introducerName}</strong>
+                  <span className="mono">{result.referenceNumber}</span>
                   <a href={result.pdfUrl} target="_blank" rel="noreferrer">
                     Open PDF
                   </a>
                 </>
               ) : (
                 <>
-                  {result.introducerName}: failed — {result.error}
+                  <strong>{result.introducerName}</strong>
+                  <span>failed — {result.error}</span>
                 </>
               )}
             </li>

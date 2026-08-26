@@ -8,23 +8,25 @@ export default function App() {
 
   return (
     <div className="app">
-      <h1>Commission Pre-Confirmations</h1>
-      <nav className="tabs">
-        <button
-          type="button"
-          className={view === "form" ? "active" : ""}
-          onClick={() => setView("form")}
-        >
-          New pre-confirmation
-        </button>
-        <button
-          type="button"
-          className={view === "history" ? "active" : ""}
-          onClick={() => setView("history")}
-        >
-          History
-        </button>
-      </nav>
+      <header className="app-header">
+        <h1>Commission Pre-Confirmations</h1>
+        <nav className="tabs">
+          <button
+            type="button"
+            className={view === "form" ? "active" : ""}
+            onClick={() => setView("form")}
+          >
+            New pre-confirmation
+          </button>
+          <button
+            type="button"
+            className={view === "history" ? "active" : ""}
+            onClick={() => setView("history")}
+          >
+            History
+          </button>
+        </nav>
+      </header>
 
       {view === "form" ? <PreConfirmationForm /> : <HistoryList />}
     </div>

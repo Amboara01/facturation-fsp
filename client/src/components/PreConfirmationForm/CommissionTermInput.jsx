@@ -16,10 +16,10 @@ export default function CommissionTermInput({ productName, term, onChange }) {
   }
 
   return (
-    <div className="commission-term-input">
+    <div className="commission-term-row">
       <span className="product-label">{productName}</span>
-      <label>
-        Commission type
+      <label className="field">
+        <span className="field-label">Commission type</span>
         <select value={term.type} onChange={(e) => handleTypeChange(e.target.value)}>
           {COMMISSION_TYPES.map((option) => (
             <option key={option.value} value={option.value}>
@@ -31,8 +31,8 @@ export default function CommissionTermInput({ productName, term, onChange }) {
 
       {term.type === "flatAmount" && (
         <>
-          <label>
-            Amount
+          <label className="field">
+            <span className="field-label">Amount</span>
             <input
               type="number"
               min="0"
@@ -42,8 +42,8 @@ export default function CommissionTermInput({ productName, term, onChange }) {
               required
             />
           </label>
-          <label>
-            Currency
+          <label className="field field-narrow">
+            <span className="field-label">Currency</span>
             <input
               type="text"
               value={term.params.currency}
@@ -56,8 +56,8 @@ export default function CommissionTermInput({ productName, term, onChange }) {
       )}
 
       {term.type === "bpsOfNotional" && (
-        <label>
-          Bps of notional
+        <label className="field">
+          <span className="field-label">Bps of notional</span>
           <input
             type="number"
             min="0"
@@ -70,8 +70,8 @@ export default function CommissionTermInput({ productName, term, onChange }) {
       )}
 
       {term.type === "shareOfTotalFees" && (
-        <label>
-          Share of total fees (%)
+        <label className="field">
+          <span className="field-label">Share of total fees (%)</span>
           <input
             type="number"
             min="0"

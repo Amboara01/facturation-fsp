@@ -14,41 +14,47 @@ export default function HistoryList() {
   }, []);
 
   if (loading) {
-    return <p>Loading...</p>;
+    return <p className="empty-state">Loading…</p>;
   }
 
   if (error) {
-    return <p role="alert">Failed to load history: {error}</p>;
+    return (
+      <p className="empty-state result-error" role="alert">
+        Failed to load history: {error}
+      </p>
+    );
   }
 
   if (items.length === 0) {
-    return <p>No pre-confirmations generated yet.</p>;
+    return <p className="empty-state">No pre-confirmations generated yet.</p>;
   }
 
   return (
-    <table className="history-list">
-      <thead>
-        <tr>
-          <th>Reference</th>
-          <th>Introducer</th>
-          <th>Generated at</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map((item) => (
-          <tr key={item.id}>
-            <td>{item.referenceNumber}</td>
-            <td>{item.introducerName}</td>
-            <td>{new Date(item.generatedAt).toLocaleString()}</td>
-            <td>
-              <a href={item.pdfUrl} target="_blank" rel="noreferrer">
-                Open PDF
-              </a>
-            </td>
+    <div className="table-scroll">
+      <table className="history-list">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Introducer</th>
+            <th>Generated at</th>
+            <th></th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td className="mono">{item.referenceNumber}</td>
+              <td>{item.introducerName}</td>
+              <td className="mono">{new Date(item.generatedAt).toLocaleString()}</td>
+              <td>
+                <a className="btn btn-outline btn-small" href={item.pdfUrl} target="_blank" rel="noreferrer">
+                  Open PDF
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

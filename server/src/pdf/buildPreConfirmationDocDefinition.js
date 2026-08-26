@@ -86,7 +86,7 @@ function buildTotalsRows(products) {
       { text: label, bold: true, colSpan: 3 },
       {},
       {},
-      { text: formatAmount(totalsByCurrency.get(currency), currency), bold: true },
+      { text: formatAmount(totalsByCurrency.get(currency), currency), bold: true, font: "Mono" },
     ];
   });
 }
@@ -110,9 +110,9 @@ export function buildPreConfirmationDocDefinition(viewModel) {
 
   const productRows = products.map((product) => [
     product.name,
-    formatNotional(product.notionalAmount, product.notionalCurrency),
+    { text: formatNotional(product.notionalAmount, product.notionalCurrency), font: "Mono" },
     formatTradeDate(product.tradeDate),
-    formatAmount(product.computedAmount, product.computedCurrency),
+    { text: formatAmount(product.computedAmount, product.computedCurrency), font: "Mono" },
   ]);
   const totalsRows = buildTotalsRows(products);
 
